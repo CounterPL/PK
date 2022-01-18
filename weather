@@ -1,0 +1,60 @@
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Linq;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+
+namespace BoilerFL
+{
+    class Weather
+    {
+        public int WeatherTemperature { get; set; } = 0;
+        public Boolean Status { get; set; } = false;
+        private System.Windows.Controls.ProgressBar WeatherTempBarRef = null;
+        private System.Windows.Controls.ProgressBar WaterTempBarRef = null;
+        public int timeVal { get; set; } = 0;
+        private Boiler boiler;
+
+        public Weather(Boiler boiler, System.Windows.Controls.ProgressBar weatherTempBar, System.Windows.Controls.ProgressBar waterTempBar)
+        {
+            this.boiler = boiler;
+            WeatherTempBarRef = weatherTempBar;
+            WaterTempBarRef = waterTempBar;
+        }
+        public void Simulate(object sender, DoWorkEventArgs e)
+        {
+            Int32 time = 1000;
+            int k = 0;
+            while (Status)
+            {
+                time = Int32.Parse((1000 - timeVal * 100).ToString());
+                Thread.Sleep(time);
+                if (k == 5)
+                {
+                    if (WeatherTemperature > 0)
+                    {
+                        WeatherTemperature--;
+                        k = 0;
+                    }
+                }
+                if (k < (1 + (110 - boiler.WaterLevel) / 50))
+                {
+                    if (boiler.WaterTemperature > WeatherTemperature)
+                    {
+                        WeatherTemperature++;
+                        boiler.WaterTemperature--;
+                    }
+                }
+                UpdateTempBar();
+                k++;
+            }
+        }
+        public void UpdateTempBar()
+        {
+            WeatherTempBarRef.Dispatcher.Invoke(() => { WeatherTempBarRef.Value = WeatherTemperature; });
+            WaterTempBarRef.Dispatcher.Invoke(() => { WaterTempBarRef.Value = boiler.WaterTemperature; });
+        }
+    }
+}
