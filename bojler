@@ -1,0 +1,196 @@
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Linq;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+
+namespace BoilerFL
+{
+    class Boiler
+    {
+        public int WaterLevel { get; set; } = 0;
+        public double HeatLevel { get; set; } = 0;
+        public int WaterTemperature { get; set; } = 0;
+        public Boolean Status { get; set; } = false;
+        public int timeVal { get; set; } = 0;
+        private System.Windows.Controls.ProgressBar TempBarRef = null;
+        private System.Windows.Controls.Slider TargetTempSliderRef = null;
+        private System.Windows.Controls.Label HeatLabelRef = null;
+        private double[] WaterLevelFLLack,WaterLevelFLLow, WaterLevelFLMed, WaterLevelFLHigh;
+        private double[] TemperatureFLLow, TemperatureFLMed, TemperatureFLHigh;
+        private double[] HeatFLLack, HeatFLLow, HeatFLMed, HeatFLHigh;
+
+        public Boiler(System.Windows.Controls.ProgressBar waterTempBar, System.Windows.Controls.Slider targetTemp, System.Windows.Controls.Label heatLabel)
+        {
+            TempBarRef = waterTempBar;
+            InitFuzzyGroups();
+            TargetTempSliderRef = targetTemp;
+            HeatLabelRef = heatLabel;
+        }
+
+        private void InitFuzzyGroups()
+        {
+            WaterLevelFLLack = new double[101];
+            WaterLevelFLLow = new double[101];
+            WaterLevelFLMed = new double[101];
+            WaterLevelFLHigh = new double[101];
+            TemperatureFLLow = new double[101];
+            TemperatureFLMed = new double[101];
+            TemperatureFLHigh = new double[101];
+            HeatFLLack = new double[51];
+            HeatFLLow = new double[51];
+            HeatFLMed = new double[51];
+            HeatFLHigh = new double[51];
+
+            //Tworzenie termów Ilość wody
+            for (int i = 0; i < 101; i++) 
+            {
+                //brak
+                if (i == 0) WaterLevelFLLack[i] = 1; else WaterLevelFLLack[i] = 0;
+                //mało
+                if (i < 1 || i>=10) WaterLevelFLLow[i] = 0;
+                else
+                if (i >= 1 && i <= 5) WaterLevelFLLow[i] = 1;
+                else
+                if (i > 5 && i < 10) WaterLevelFLLow[i] = (double)(10 - i) / (10 - 5);
+                //średnio
+                if (i <= 5 || i >= 60) WaterLevelFLMed[i] = 0;
+                else
+                if (i > 5 && i <= 10) WaterLevelFLMed[i] = (double)(i - 5)/(10 - 5);
+                else
+                if (i > 10 && i <= 55) WaterLevelFLMed[i] = 1;
+                else
+                if (i > 55 && i < 60) WaterLevelFLMed[i] = (double)(60 - i) / (60 - 55);
+                //dużo
+                if (i <= 55) WaterLevelFLHigh[i] = 0;
+                else
+                if (i > 55 && i <= 60) WaterLevelFLHigh[i] = (double)(i - 55) / (60 - 55);
+                else
+                if (i > 60 && i <= 100) WaterLevelFLHigh[i] = 1;
+            }
+            //Tworzenie termów Różnica temperatur
+            for (int i = 0; i < 101; i++)
+            {
+                //mała
+                if (i >= 10) TemperatureFLLow[i] = 0;
+                else
+                if (i >= 0 && i <= 5) TemperatureFLLow[i] = 1;
+                else
+                if (i > 5 && i < 10) TemperatureFLLow[i] = (double)(10 - i) / (10 - 5);
+                //średnia
+                if (i <= 5 || i >= 50) TemperatureFLMed[i] = 0;
+                else
+                if (i > 5 && i <= 10) TemperatureFLMed[i] = (double)(i - 5) / (10 - 5);
+                else
+                if (i > 10 && i <= 45) TemperatureFLMed[i] = 1;
+                else
+                if (i > 45 && i < 50) TemperatureFLMed[i] = (double)(50 - i) / (50 - 45);
+                //duża
+                if (i <= 45) TemperatureFLHigh[i] = 0;
+                else
+                if (i > 45 && i <= 50) TemperatureFLHigh[i] = (double)(i - 45) / (50 - 45);
+                else
+                if (i > 50 && i <= 100) TemperatureFLHigh[i] = 1;
+            }
+            //Tworzenie termów Stopień grzania
+            for (int i = 0; i < 51; i++)
+            {
+                //brak
+                if (i == 0) HeatFLLack[i] = 1; else HeatFLLack[i] = 0;
+                //mały
+                if (i < 1 || i >= 15) HeatFLLow[i] = 0;
+                else
+                if (i >= 1 && i <= 10) HeatFLLow[i] = 1;
+                else
+                if (i > 10 && i < 15) HeatFLLow[i] = (double)(15 - i) / (15 - 10);
+                //średni
+                if (i <= 10 || i >= 35) HeatFLMed[i] = 0;
+                else
+                if (i > 10 && i <= 15) HeatFLMed[i] = (double)(i - 10) / (15 - 10);
+                else
+                if (i > 15 && i <= 30) HeatFLMed[i] = 1;
+                else
+                if (i > 30 && i < 35) HeatFLMed[i] = (double)(35 - i) / (35 - 30);
+                //duży
+                if (i <= 30) HeatFLHigh[i] = 0;
+                else
+                if (i > 30 && i <= 35) HeatFLHigh[i] = (double)(i - 30) / (35 - 30);
+                else
+                if (i > 35 && i <= 50) HeatFLHigh[i] = 1;
+            }
+        }
+
+        public void Simulate(object sender, DoWorkEventArgs e)
+        {
+            Int32 time = 1000;
+            while (Status)
+            {
+                time = Int32.Parse((1000 - timeVal * 100).ToString());
+                int TargetTemp = TargetTempSliderRef.Dispatcher.Invoke(() => { return (int)TargetTempSliderRef.Value; });
+                Thread.Sleep(time);
+                if (TargetTemp > WaterTemperature)
+                {
+                    //Rozmywanie
+                    double WaterLackMem = WaterLevelFLLack[WaterLevel];
+                    double WaterLowMem = WaterLevelFLLow[WaterLevel];
+                    double WaterMedMem = WaterLevelFLMed[WaterLevel];
+                    double WaterHighMem = WaterLevelFLHigh[WaterLevel];
+                        
+                    double TempLowMem = TemperatureFLLow[TargetTemp - WaterTemperature];//Indeksy to różnica temperatury docelowej i aktualnej
+                    double TempMedMem = TemperatureFLMed[TargetTemp - WaterTemperature];
+                    double TempHighMem = TemperatureFLHigh[TargetTemp - WaterTemperature];
+
+                    //Wnioskowanie
+                        //Wartości przycięć zbiorów wyjściowych
+                    double HeatLackMem = Math.Max(Math.Max(Math.Min(WaterLackMem, TempLowMem), Math.Min(WaterLackMem, TempMedMem)), Math.Min(WaterLackMem, TempHighMem));
+                    double HeatLowMem = Math.Min(WaterLowMem, TempLowMem);
+                    double HeatMedMem = Math.Max(Math.Max(Math.Max(Math.Min(WaterLowMem, TempMedMem), Math.Min(WaterLowMem, TempHighMem)), Math.Max(Math.Min(WaterMedMem, TempLowMem), Math.Min(WaterMedMem, TempMedMem))), Math.Min(WaterHighMem, TempLowMem));
+                    double HeatHighMem = Math.Max(Math.Max(Math.Min(WaterMedMem, TempHighMem), Math.Min(WaterHighMem, TempMedMem)), Math.Min(WaterHighMem, TempHighMem));
+                    //Odpalanie reguł na zbiorach wyjściowych (Przycinanie zbiorów wyjściowych wartościami wyżej obliczonymi)
+                    double[] HeatFLLackCopy = new double[51];
+                    double[] HeatFLLowCopy = new double[51];
+                    double[] HeatFLMedCopy = new double[51];
+                    double[] HeatFLHighCopy = new double[51];
+
+                    for (int i = 0; i < 51; i++) 
+                    {
+                        HeatFLLackCopy[i] = Math.Min(HeatFLLack[i], HeatLackMem);
+                        HeatFLLowCopy[i] = Math.Min(HeatFLLow[i], HeatLowMem);
+                        HeatFLMedCopy[i] = Math.Min(HeatFLMed[i], HeatMedMem);
+                        HeatFLHighCopy[i] = Math.Min(HeatFLHigh[i], HeatHighMem);
+                    }
+                    //Wyostrzanie
+                        //Wyznaczenie zagregowanego zbioru końcowego
+                    double[] AggregatedGroup = new double[51];
+                    for (int i = 0; i < 51; i++)
+                    {
+                        AggregatedGroup[i] = Math.Max(Math.Max(HeatFLLackCopy[i], HeatFLLowCopy[i]), Math.Max(HeatFLMedCopy[i], HeatFLHighCopy[i]));
+                    }
+                        //Wyznaczenie stopnia grzania
+                    double sumNom=0, sumDenom=0; //Nominator - licznik, Denominator - mianownik
+                    for (int i = 0; i < 51; i++) 
+                    {
+                        sumNom += AggregatedGroup[i] * i;
+                        sumDenom += AggregatedGroup[i];
+                    }
+
+                    HeatLevel = sumNom / sumDenom;
+                    UpdateHeatLabel();
+                    //Wzrost temperatury na podstawie stopnia grzania
+                    WaterTemperature += (int)Math.Round(HeatLevel / 10);
+                    UpdateTempBar();
+                }
+            }
+        }
+        public void UpdateTempBar()
+        {
+            TempBarRef.Dispatcher.Invoke(() => { TempBarRef.Value = WaterTemperature; });
+        }
+        public void UpdateHeatLabel()
+        {
+            HeatLabelRef.Dispatcher.Invoke(() => { HeatLabelRef.Content = HeatLevel.ToString(); });
+        }
+    }
+}
